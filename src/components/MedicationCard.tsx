@@ -49,7 +49,24 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
           />
           <Text style={styles.timeText}>{medication.times.join(", ")}</Text>
         </View>
-        <Text style={styles.stockText}>Estoque: {medication.stock}</Text>
+        <View style={styles.stockContainer}>
+          <Text
+            style={[
+              styles.stockText,
+              medication.stock <= medication.lowStockThreshold && {
+                color: Colors.accent,
+                fontWeight: "bold",
+              },
+            ]}
+          >
+            Estoque: {medication.stock}
+          </Text>
+          {medication.stock <= medication.lowStockThreshold && !isOnTheWay && (
+            <View style={styles.cartIcon}>
+              <Ionicons name="cart" size={16} color={Colors.accent} />
+            </View>
+          )}
+        </View>
       </View>
     </TouchableOpacity>
   );
@@ -117,5 +134,12 @@ const styles = StyleSheet.create({
   stockText: {
     fontSize: Typography.sizes.xs,
     color: Colors.textSecondary,
+  },
+  stockContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  cartIcon: {
+    marginLeft: Spacing.xs,
   },
 });

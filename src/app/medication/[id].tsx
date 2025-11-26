@@ -63,6 +63,29 @@ export default function MedicationDetailScreen() {
     });
   };
 
+  const handleTakeDose = async () => {
+    if (!medication) return;
+
+    Alert.alert(
+      "Confirmar Dose",
+      "Deseja marcar esta dose como tomada? Isso reduzirá 1 unidade do estoque.",
+      [
+        { text: "Cancelar", style: "cancel" },
+        {
+          text: "Confirmar",
+          onPress: async () => {
+            const updatedMedication = await MedicationService.takeDose(
+              medication.id
+            );
+            if (updatedMedication) {
+              setMedication(updatedMedication);
+            }
+          },
+        },
+      ]
+    );
+  };
+
   const handleDelete = async () => {
     Alert.alert(
       "Excluir Medicamento",
@@ -107,13 +130,11 @@ export default function MedicationDetailScreen() {
             color={Colors.textSecondary}
           />
           <View style={styles.infoContent}>
-            <Text style={styles.infoLabel}>Frequência</Text>
+            <Text style={styles.infoLabel}>Horários</Text>
             <Text style={styles.infoValue}>
-              {medication.frequency === "daily"
-                ? "Diariamente"
-                : medication.frequency === "weekly"
-                ? "Semanalmente"
-                : "Se necessário"}
+              {medication.times && medication.times.length > 0
+                ? medication.times.join(", ")
+                : "Sem horário definido"}
             </Text>
           </View>
         </View>
@@ -158,6 +179,36 @@ export default function MedicationDetailScreen() {
             <Ionicons name="cart" size={24} color={Colors.white} />
             <Text style={styles.buyButtonText}>Comprar na Farmácia</Text>
           </TouchableOpacity>
+        )}
+      </View>
+
+      <View style={styles.section}>
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>Histórico de Doses</Text>
+          <TouchableOpacity onPress={handleTakeDose}>
+            <Text style={styles.markDoseText}>Marcar dose</Text>
+          </TouchableOpacity>
+        </View>
+
+        {medication.takenHistory && medication.takenHistory.length > 0 ? (
+          medication.takenHistory.slice(0, 5).map((history, index) => (
+            <View key={index} style={styles.historyItem}>
+              <Ionicons
+                name="checkmark-circle"
+                size={24}
+                color={Colors.secondary}
+              />
+              <View style={styles.historyContent}>
+                <Text style={styles.historyTitle}>Dose tomada</Text>
+                <Text style={styles.historyDate}>
+                  {new Date(history.date).toLocaleDateString("pt-BR")}{" "}
+                  {history.time}
+                </Text>
+              </View>
+            </View>
+          ))
+        ) : (
+          <Text style={styles.emptyHistoryText}>Nenhuma dose registrada</Text>
         )}
       </View>
 
@@ -218,6 +269,17 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: Spacing.m,
   },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: Spacing.m,
+  },
+  markDoseText: {
+    color: Colors.primary,
+    fontWeight: Typography.weights.bold,
+    fontSize: Typography.sizes.m,
+  },
   infoRow: {
     flexDirection: "row",
     marginBottom: Spacing.l,
@@ -235,6 +297,30 @@ const styles = StyleSheet.create({
     fontSize: Typography.sizes.m,
     color: Colors.textPrimary,
     fontWeight: Typography.weights.medium,
+  },
+  historyItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: Spacing.s,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border,
+  },
+  historyContent: {
+    marginLeft: Spacing.m,
+  },
+  historyTitle: {
+    fontSize: Typography.sizes.m,
+    fontWeight: Typography.weights.medium,
+    color: Colors.textPrimary,
+  },
+  historyDate: {
+    fontSize: Typography.sizes.s,
+    color: Colors.textSecondary,
+  },
+  emptyHistoryText: {
+    color: Colors.textSecondary,
+    fontStyle: "italic",
+    marginTop: Spacing.s,
   },
   actionsContainer: {
     padding: Spacing.m,

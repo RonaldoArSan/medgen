@@ -1,8 +1,10 @@
 import { MaterialIcons } from "@expo/vector-icons";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Platform,
   ScrollView,
   StyleSheet,
   Text,
@@ -24,6 +26,11 @@ export default function AddMedicationScreen() {
   const [form, setForm] = useState("");
   const [stock, setStock] = useState("");
   const [frequency, setFrequency] = useState<FrequencyType>("daily");
+  const [times, setTimes] = useState<string[]>(["08:00"]);
+  const [showTimePicker, setShowTimePicker] = useState(false);
+  const [activeTimeIndex, setActiveTimeIndex] = useState<number | null>(null);
+  const [startDate, setStartDate] = useState(new Date().toISOString());
+  const [showDatePicker, setShowDatePicker] = useState(false);
 
   useEffect(() => {
     if (initialData && typeof initialData === "string") {
@@ -35,11 +42,59 @@ export default function AddMedicationScreen() {
         if (data.form) setForm(data.form);
         if (data.stock) setStock(data.stock.toString());
         if (data.frequency) setFrequency(data.frequency);
+        if (data.times && Array.isArray(data.times)) setTimes(data.times);
+        if (data.startDate) setStartDate(data.startDate);
       } catch (e) {
         console.error("Failed to parse initial data", e);
       }
     }
   }, [initialData]);
+
+  const addTime = () => {
+    const newTimes = [...times, "08:00"];
+    setTimes(newTimes);
+    // Open picker for the newly added time (last index)
+    openTimePicker(newTimes.length - 1);
+  };
+
+  const removeTime = (index: number) => {
+    const newTimes = [...times];
+    newTimes.splice(index, 1);
+    setTimes(newTimes);
+  };
+
+  const openTimePicker = (index: number) => {
+    setActiveTimeIndex(index);
+    setShowTimePicker(true);
+  };
+
+  const handleTimeChange = (event: any, selectedDate?: Date) => {
+    setShowTimePicker(Platform.OS === "ios");
+
+    if (event.type === "dismissed") {
+      // If user cancelled and we just added this time (it's the last one and we are editing it),
+      // we might want to keep it as default or remove it.
+      // For now, we keep the default "08:00" we added in addTime.
+      return;
+    }
+
+    if (selectedDate && activeTimeIndex !== null) {
+      const hours = selectedDate.getHours().toString().padStart(2, "0");
+      const minutes = selectedDate.getMinutes().toString().padStart(2, "0");
+      const timeString = `${hours}:${minutes}`;
+
+      const newTimes = [...times];
+      newTimes[activeTimeIndex] = timeString;
+      setTimes(newTimes);
+    }
+  };
+
+  const handleDateChange = (event: any, selectedDate?: Date) => {
+    setShowDatePicker(Platform.OS === "ios");
+    if (selectedDate) {
+      setStartDate(selectedDate.toISOString());
+    }
+  };
 
   const handleSave = async () => {
     if (!name || !dosage || !stock) {
@@ -53,7 +108,7 @@ export default function AddMedicationScreen() {
         dosage,
         form: form || "Comprimido",
         frequency,
-        times: ["08:00"], // Default time for now
+        times,
         stock: parseInt(stock),
         lowStockThreshold: 5,
         startDate: new Date().toISOString(),
@@ -95,6 +150,7 @@ export default function AddMedicationScreen() {
           value={name}
           onChangeText={setName}
           placeholder="Ex: Losartana"
+          placeholderTextColor={Colors.textSecondary}
         />
       </View>
 
@@ -106,6 +162,7 @@ export default function AddMedicationScreen() {
             value={dosage}
             onChangeText={setDosage}
             placeholder="Ex: 50mg"
+            placeholderTextColor={Colors.textSecondary}
           />
         </View>
         <View style={[styles.formGroup, { flex: 1, marginLeft: Spacing.s }]}>
@@ -116,6 +173,7 @@ export default function AddMedicationScreen() {
             onChangeText={setStock}
             keyboardType="numeric"
             placeholder="Qtd"
+            placeholderTextColor={Colors.textSecondary}
           />
         </View>
       </View>
@@ -127,7 +185,30 @@ export default function AddMedicationScreen() {
           value={form}
           onChangeText={setForm}
           placeholder="Ex: Comprimido, Xarope"
+          placeholderTextColor={Colors.textSecondary}
         />
+      </View>
+
+      <View style={styles.formGroup}>
+        <Text style={styles.label}>Data de Início</Text>
+        <TouchableOpacity
+          style={styles.input}
+          onPress={() => setShowDatePicker(true)}
+        >
+          <Text
+            style={{ color: Colors.textPrimary, fontSize: Typography.sizes.m }}
+          >
+            {new Date(startDate).toLocaleDateString("pt-BR")}
+          </Text>
+        </TouchableOpacity>
+        {showDatePicker && (
+          <DateTimePicker
+            value={new Date(startDate)}
+            mode="date"
+            display="default"
+            onChange={handleDateChange}
+          />
+        )}
       </View>
 
       <View style={styles.formGroup}>
@@ -158,6 +239,59 @@ export default function AddMedicationScreen() {
           ))}
         </View>
       </View>
+
+      {frequency !== "as_needed" && (
+        <View style={styles.formGroup}>
+          <Text style={styles.label}>Horários</Text>
+          {times.map((time, index) => (
+            <View key={index} style={styles.timeRow}>
+              <TouchableOpacity
+                style={[styles.input, { flex: 1, justifyContent: "center" }]}
+                onPress={() => openTimePicker(index)}
+              >
+                <Text
+                  style={{
+                    color: Colors.textPrimary,
+                    fontSize: Typography.sizes.m,
+                  }}
+                >
+                  {time}
+                </Text>
+              </TouchableOpacity>
+              {times.length > 1 && (
+                <TouchableOpacity
+                  style={styles.removeTimeButton}
+                  onPress={() => removeTime(index)}
+                >
+                  <MaterialIcons
+                    name="remove-circle-outline"
+                    size={24}
+                    color={Colors.danger}
+                  />
+                </TouchableOpacity>
+              )}
+            </View>
+          ))}
+          <TouchableOpacity style={styles.addTimeButton} onPress={addTime}>
+            <MaterialIcons
+              name="add-circle-outline"
+              size={20}
+              color={Colors.primary}
+            />
+            <Text style={styles.addTimeText}>Adicionar Horário</Text>
+          </TouchableOpacity>
+        </View>
+      )}
+
+      {showTimePicker && (
+        <DateTimePicker
+          value={new Date()}
+          mode="time"
+          is24Hour={true}
+          display="default"
+          onChange={handleTimeChange}
+        />
+      )}
 
       <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
         <Text style={styles.saveButtonText}>
@@ -248,5 +382,30 @@ const styles = StyleSheet.create({
     color: Colors.primary,
     fontSize: Typography.sizes.m,
     fontWeight: Typography.weights.bold,
+  },
+  timeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    marginBottom: Spacing.s,
+    gap: Spacing.s,
+  },
+  removeTimeButton: {
+    padding: Spacing.s,
+  },
+  addTimeButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    padding: Spacing.m,
+    borderWidth: 1,
+    borderColor: Colors.primary,
+    borderRadius: BorderRadius.m,
+    borderStyle: "dashed",
+    marginTop: Spacing.s,
+    gap: Spacing.s,
+  },
+  addTimeText: {
+    color: Colors.primary,
+    fontWeight: Typography.weights.medium,
   },
 });

@@ -1,16 +1,16 @@
-import { useRouter } from "expo-router";
-import React, { useState } from "react";
+import { useFocusEffect, useRouter } from "expo-router";
+import React, { useCallback, useState } from "react";
 import {
   Alert,
   ScrollView,
   StyleSheet,
   Text,
-  TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { useCart } from "../context/CartContext";
 import OrderService from "../services/OrderService";
+import UserService from "../services/UserService";
 import { BorderRadius, Colors, Spacing, Typography } from "../theme";
 
 export default function CheckoutScreen() {
@@ -18,6 +18,19 @@ export default function CheckoutScreen() {
   const router = useRouter();
   const [address, setAddress] = useState("");
   const [paymentMethod, setPaymentMethod] = useState("credit_card");
+
+  useFocusEffect(
+    useCallback(() => {
+      loadUserAddress();
+    }, [])
+  );
+
+  const loadUserAddress = async () => {
+    const user = await UserService.getUser();
+    if (user.address) {
+      setAddress(user.address);
+    }
+  };
 
   const handlePlaceOrder = async () => {
     if (!address) {
@@ -40,13 +53,19 @@ export default function CheckoutScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Endereço de Entrega</Text>
-        <TextInput
-          style={styles.input}
-          placeholder="Rua, Número, Bairro, Cidade - UF"
-          value={address}
-          onChangeText={setAddress}
-          multiline
-        />
+        <View style={styles.addressContainer}>
+          <Text style={styles.addressText}>
+            {address || "Nenhum endereço selecionado"}
+          </Text>
+        </View>
+        <TouchableOpacity
+          onPress={() => router.push("/address")}
+          style={styles.changeAddressButton}
+        >
+          <Text style={styles.changeAddressText}>
+            {address ? "Alterar endereço" : "Adicionar endereço"}
+          </Text>
+        </TouchableOpacity>
       </View>
 
       <View style={styles.section}>
@@ -129,14 +148,26 @@ const styles = StyleSheet.create({
     color: Colors.textPrimary,
     marginBottom: Spacing.m,
   },
-  input: {
+  addressContainer: {
+    backgroundColor: Colors.background,
     borderWidth: 1,
     borderColor: Colors.border,
     borderRadius: BorderRadius.m,
     padding: Spacing.m,
+    marginBottom: Spacing.s,
+  },
+  addressText: {
     fontSize: Typography.sizes.m,
-    minHeight: 80,
-    textAlignVertical: "top",
+    color: Colors.textPrimary,
+  },
+  changeAddressButton: {
+    padding: Spacing.s,
+    alignSelf: "flex-start",
+  },
+  changeAddressText: {
+    color: Colors.primary,
+    fontWeight: Typography.weights.medium,
+    fontSize: Typography.sizes.s,
   },
   summaryItem: {
     flexDirection: "row",

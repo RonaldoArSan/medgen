@@ -38,7 +38,7 @@ export default function CartScreen() {
         <Text style={styles.emptyText}>Seu carrinho está vazio</Text>
         <TouchableOpacity
           style={styles.continueButton}
-          onPress={() => router.back()}
+          onPress={() => router.push("/(tabs)/pharmacy")}
         >
           <Text style={styles.continueButtonText}>Continuar Comprando</Text>
         </TouchableOpacity>
@@ -98,6 +98,15 @@ export default function CartScreen() {
       />
 
       <View style={styles.footer}>
+        <TouchableOpacity
+          style={styles.continueShoppingButton}
+          onPress={() => router.push("/(tabs)/pharmacy")}
+        >
+          <Text style={styles.continueShoppingButtonText}>
+            Continuar Comprando
+          </Text>
+        </TouchableOpacity>
+
         <View style={styles.totalRow}>
           <Text style={styles.totalLabel}>Total</Text>
           <Text style={styles.totalValue}>R$ {total.toFixed(2)}</Text>
@@ -183,6 +192,7 @@ const styles = StyleSheet.create({
     marginHorizontal: Spacing.m,
     fontSize: Typography.sizes.m,
     fontWeight: Typography.weights.medium,
+    color: Colors.textPrimary,
   },
   footer: {
     padding: Spacing.l,
@@ -215,5 +225,15 @@ const styles = StyleSheet.create({
     color: Colors.white,
     fontSize: Typography.sizes.m,
     fontWeight: Typography.weights.bold,
+  },
+  continueShoppingButton: {
+    paddingVertical: Spacing.m,
+    alignItems: "center",
+    marginBottom: Spacing.m,
+  },
+  continueShoppingButtonText: {
+    color: Colors.primary,
+    fontWeight: Typography.weights.bold,
+    fontSize: Typography.sizes.m,
   },
 });

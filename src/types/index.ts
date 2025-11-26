@@ -4,6 +4,7 @@ export interface User {
   email: string;
   phone?: string;
   address?: string;
+  savedAddresses?: string[];
   createdAt: string;
 }
 
@@ -22,6 +23,7 @@ export interface Medication {
   startDate: string;
   endDate?: string;
   active: boolean;
+  takenHistory?: { date: string; time: string }[];
 }
 
 export interface Reminder {

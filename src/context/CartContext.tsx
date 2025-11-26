@@ -5,6 +5,9 @@ import { CartItem, PharmacyProduct } from "../types";
 interface CartContextType {
   items: CartItem[];
   addToCart: (product: PharmacyProduct, quantity: number) => void;
+  addMultipleToCart: (
+    products: { product: PharmacyProduct; quantity: number }[]
+  ) => void;
   removeFromCart: (productId: string) => void;
   updateQuantity: (productId: string, quantity: number) => void;
   clearCart: () => void;
@@ -59,6 +62,34 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
     saveCart(newItems);
   };
 
+  const addMultipleToCart = (
+    products: { product: PharmacyProduct; quantity: number }[]
+  ) => {
+    let newItems = [...items];
+
+    products.forEach(({ product, quantity }) => {
+      const existingItemIndex = newItems.findIndex(
+        (item) => item.productId === product.id
+      );
+
+      if (existingItemIndex > -1) {
+        newItems[existingItemIndex] = {
+          ...newItems[existingItemIndex],
+          quantity: newItems[existingItemIndex].quantity + quantity,
+        };
+      } else {
+        newItems.push({
+          productId: product.id,
+          productName: product.name,
+          price: product.price,
+          quantity,
+        });
+      }
+    });
+
+    saveCart(newItems);
+  };
+
   const removeFromCart = (productId: string) => {
     const newItems = items.filter((item) => item.productId !== productId);
     saveCart(newItems);
@@ -90,6 +121,7 @@ export const CartProvider: React.FC<{ children: React.ReactNode }> = ({
       value={{
         items,
         addToCart,
+        addMultipleToCart,
         removeFromCart,
         updateQuantity,
         clearCart,

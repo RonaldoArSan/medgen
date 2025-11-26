@@ -6,16 +6,17 @@ import { Colors } from "../theme";
 export default function RootLayout() {
   return (
     <CartProvider>
-      <StatusBar style="dark" />
+      <StatusBar style="light" />
       <Stack
         screenOptions={{
           headerStyle: {
-            backgroundColor: Colors.primary,
+            backgroundColor: Colors.surface,
           },
-          headerTintColor: Colors.white,
+          headerTintColor: Colors.textPrimary,
           headerTitleStyle: {
             fontWeight: "bold",
           },
+          headerShadowVisible: false,
           contentStyle: {
             backgroundColor: Colors.background,
           },
@@ -39,6 +40,11 @@ export default function RootLayout() {
         />
         <Stack.Screen name="cart" options={{ title: "Carrinho" }} />
         <Stack.Screen name="checkout" options={{ title: "Finalizar Compra" }} />
+        <Stack.Screen
+          name="address/index"
+          options={{ title: "Meus Endereços" }}
+        />
+        <Stack.Screen name="address/add" options={{ title: "Novo Endereço" }} />
       </Stack>
     </CartProvider>
   );

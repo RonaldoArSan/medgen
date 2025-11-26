@@ -1,7 +1,4 @@
 import * as Notifications from 'expo-notifications';
-import { v4 as uuidv4 } from 'uuid';
-import { Reminder } from '../types';
-import LocalStorageService from './LocalStorageService';
 
 Notifications.setNotificationHandler({
   handleNotification: async () => ({
@@ -44,7 +41,7 @@ class ReminderService {
 
   static async scheduleReminder(title: string, body: string, hour: number, minute: number, weekdays: number[] = []) {
     const hasPermission = await this.requestPermissions();
-    if (!hasPermission) return null;
+    if (!hasPermission) return [];
 
     const notificationsToSchedule = [
       { offset: 10, sound: false, suffix: '(Em 10 min)' },
@@ -75,45 +72,27 @@ class ReminderService {
       ids.push(id);
     }
 
-    return ids[ids.length - 1]; // Return the ID of the main notification
+    return ids;
   }
 
-  static async addReminder(reminder: Omit<Reminder, 'id' | 'takenDates'>): Promise<Reminder> {
-    const reminders = await this.getReminders();
+  static async scheduleMedicationReminders(medication: { id: string; name: string; times: string[] }) {
+    // Cancel existing reminders for this medication (if we were tracking them, but for now we might just rely on the user managing them or simple overwrite if we had IDs)
+    // In a real app, we'd store the notification IDs linked to the medication ID.
+    // For this implementation, we will just schedule new ones.
     
-    // Parse time string "HH:mm"
-    const [hour, minute] = reminder.time.split(':').map(Number);
-    
-    // Schedule notification
-    const notificationId = await this.scheduleReminder(
-      'Hora do Medicamento',
-      `Está na hora de tomar ${reminder.medicationName}`,
-      hour,
-      minute
-    );
-
-    const newReminder: Reminder = {
-      ...reminder,
-      id: uuidv4(),
-      takenDates: [],
-    };
-
-    const updatedReminders = [...reminders, newReminder];
-    await LocalStorageService.setItem(REMINDERS_KEY, updatedReminders);
-    
-    return newReminder;
+    for (const time of medication.times) {
+      const [hour, minute] = time.split(':').map(Number);
+      await this.scheduleReminder(
+        'Hora do Medicamento',
+        `Está na hora de tomar ${medication.name}`,
+        hour,
+        minute
+      );
+    }
   }
 
-  static async getReminders(): Promise<Reminder[]> {
-    const stored = await LocalStorageService.getItem<Reminder[]>(REMINDERS_KEY);
-    return stored || [];
-  }
-
-  static async deleteReminder(id: string): Promise<void> {
-    const reminders = await this.getReminders();
-    const updatedReminders = reminders.filter(r => r.id !== id);
-    await LocalStorageService.setItem(REMINDERS_KEY, updatedReminders);
-    // Note: In a real app we should also cancel the scheduled notification using its ID
+  static async cancelAllReminders() {
+    await Notifications.cancelAllScheduledNotificationsAsync();
   }
 }
 

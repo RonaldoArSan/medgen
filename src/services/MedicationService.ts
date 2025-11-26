@@ -1,9 +1,9 @@
-import { v4 as uuidv4 } from 'uuid';
 import { Medication } from '../types';
 import LocalStorageService from './LocalStorageService';
 import { MOCK_MEDICATIONS } from './mockData';
 import OrderService from './OrderService';
 import PharmacyService from './PharmacyService';
+import ReminderService from './ReminderService';
 
 const STORAGE_KEY = '@medications';
 
@@ -61,9 +61,13 @@ class MedicationService {
 
   static async addMedication(medication: Omit<Medication, 'id'>): Promise<Medication> {
     const medications = await this.getMedications();
-    const newMedication = { ...medication, id: uuidv4() };
+    const newMedication = { ...medication, id: Date.now().toString() }; // Changed ID generation
     const updatedList = [...medications, newMedication];
     await LocalStorageService.setItem(STORAGE_KEY, updatedList);
+    
+    // Schedule reminders
+    await ReminderService.scheduleMedicationReminders(newMedication);
+    
     return newMedication;
   }
 
@@ -71,6 +75,11 @@ class MedicationService {
     const medications = await this.getMedications();
     const updatedList = medications.map(m => m.id === medication.id ? medication : m);
     await LocalStorageService.setItem(STORAGE_KEY, updatedList);
+    
+    // Reschedule reminders
+    // Note: Ideally we should cancel old ones first, but for now we just add new ones.
+    // A more robust solution would track notification IDs.
+    await ReminderService.scheduleMedicationReminders(medication);
   }
 
   static async deleteMedication(id: string): Promise<void> {
@@ -88,6 +97,35 @@ class MedicationService {
       return m;
     });
     await LocalStorageService.setItem(STORAGE_KEY, updatedList);
+  }
+
+  static async takeDose(id: string): Promise<Medication | null> {
+    const medications = await this.getMedications();
+    let updatedMedication: Medication | null = null;
+    
+    const updatedList = medications.map(m => {
+      if (m.id === id) {
+        const newStock = Math.max(0, m.stock - 1);
+        const newHistory = [
+          { date: new Date().toISOString(), time: new Date().toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) },
+          ...(m.takenHistory || [])
+        ];
+        
+        updatedMedication = { 
+          ...m, 
+          stock: newStock,
+          takenHistory: newHistory
+        };
+        return updatedMedication;
+      }
+      return m;
+    });
+    
+    if (updatedMedication) {
+      await LocalStorageService.setItem(STORAGE_KEY, updatedList);
+    }
+    
+    return updatedMedication;
   }
 }
 

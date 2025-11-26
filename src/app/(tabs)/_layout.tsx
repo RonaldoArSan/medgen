@@ -1,4 +1,4 @@
-import { MaterialIcons } from "@expo/vector-icons";
+import { Ionicons } from "@expo/vector-icons";
 import { Tabs } from "expo-router";
 import { Colors } from "../../theme";
 
@@ -6,13 +6,37 @@ export default function TabLayout() {
   return (
     <Tabs
       screenOptions={{
-        tabBarActiveTintColor: Colors.primary,
-        tabBarInactiveTintColor: Colors.textLight,
+        tabBarActiveTintColor: Colors.primaryLight,
+        tabBarInactiveTintColor: Colors.textSecondary,
         headerShown: true,
         headerStyle: {
-          backgroundColor: Colors.primary,
+          backgroundColor: Colors.surface,
+          borderBottomColor: Colors.border,
+          borderBottomWidth: 1,
+          elevation: 0,
+          shadowOpacity: 0,
         },
-        headerTintColor: Colors.white,
+        headerTintColor: Colors.textPrimary,
+        headerTitleStyle: {
+          fontWeight: "bold",
+        },
+        tabBarStyle: {
+          backgroundColor: Colors.surface,
+          borderTopWidth: 0,
+          height: 65,
+          paddingBottom: 10,
+          paddingTop: 10,
+          elevation: 10,
+          shadowColor: "#000",
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.1,
+          shadowRadius: 4,
+        },
+        tabBarLabelStyle: {
+          fontSize: 12,
+          fontWeight: "600",
+          marginBottom: 4,
+        },
       }}
     >
       <Tabs.Screen
@@ -20,8 +44,12 @@ export default function TabLayout() {
         options={{
           title: "Início",
           headerShown: false,
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="dashboard" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "home" : "home-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -29,8 +57,12 @@ export default function TabLayout() {
         name="medications/index"
         options={{
           title: "Medicamentos",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="medication" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "medkit" : "medkit-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -38,8 +70,12 @@ export default function TabLayout() {
         name="pharmacy/index"
         options={{
           title: "Farmácia",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="local-pharmacy" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "cart" : "cart-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -47,8 +83,12 @@ export default function TabLayout() {
         name="two"
         options={{
           title: "Pedidos",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="receipt" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "receipt" : "receipt-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
@@ -56,8 +96,12 @@ export default function TabLayout() {
         name="profile"
         options={{
           title: "Perfil",
-          tabBarIcon: ({ color, size }) => (
-            <MaterialIcons name="person" size={size} color={color} />
+          tabBarIcon: ({ color, size, focused }) => (
+            <Ionicons
+              name={focused ? "person" : "person-outline"}
+              size={size}
+              color={color}
+            />
           ),
         }}
       />
