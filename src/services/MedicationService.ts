@@ -86,6 +86,9 @@ class MedicationService {
     const medications = await this.getMedications();
     const updatedList = medications.filter(m => m.id !== id);
     await LocalStorageService.setItem(STORAGE_KEY, updatedList);
+    
+    // Cancel reminders
+    await ReminderService.cancelRemindersForMedication(id);
   }
 
   static async updateStock(id: string, quantity: number): Promise<void> {

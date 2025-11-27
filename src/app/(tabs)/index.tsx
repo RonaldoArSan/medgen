@@ -74,7 +74,7 @@ export default function HomePage() {
     }
   };
 
-  const activeMedications = medications.filter((m) => m.active);
+  const activeMedications = medications.filter((m) => m.active).reverse();
   // Only show in alert section if NOT on the way
   const visibleLowStock = lowStockMeds.filter((item) => !item.isOnTheWay);
 
@@ -151,7 +151,7 @@ export default function HomePage() {
 
       <View style={styles.medicationsList}>
         {activeMedications.length > 0 ? (
-          activeMedications.slice(0, 3).map((med) => {
+          activeMedications.slice(0, 5).map((med) => {
             const status = lowStockMeds.find((l) => l.medication.id === med.id);
             return (
               <MedicationCard

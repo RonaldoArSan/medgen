@@ -1,26 +1,45 @@
 import * as Notifications from 'expo-notifications';
+import LocalStorageService from './LocalStorageService';
 
-Notifications.setNotificationHandler({
-  handleNotification: async () => ({
-    shouldShowAlert: true,
-    shouldPlaySound: true,
-    shouldSetBadge: false,
-    shouldShowBanner: true,
-    shouldShowList: true,
-  }),
-});
+// Notifications.setNotificationHandler is moved to init() to avoid immediate crash in Expo Go if unsupported
 
 const REMINDERS_KEY = '@reminders';
 
 class ReminderService {
-  static async requestPermissions() {
-    const { status: existingStatus } = await Notifications.getPermissionsAsync();
-    let finalStatus = existingStatus;
-    if (existingStatus !== 'granted') {
-      const { status } = await Notifications.requestPermissionsAsync();
-      finalStatus = status;
+  private static isInitialized = false;
+
+  static init() {
+    if (this.isInitialized) return;
+    try {
+      Notifications.setNotificationHandler({
+        handleNotification: async () => ({
+          shouldShowAlert: true,
+          shouldPlaySound: true,
+          shouldSetBadge: false,
+          shouldShowBanner: true,
+          shouldShowList: true,
+        }),
+      });
+      this.isInitialized = true;
+    } catch (error) {
+      console.warn("Failed to initialize notifications:", error);
     }
-    return finalStatus === 'granted';
+  }
+
+  static async requestPermissions() {
+    this.init();
+    try {
+      const { status: existingStatus } = await Notifications.getPermissionsAsync();
+      let finalStatus = existingStatus;
+      if (existingStatus !== 'granted') {
+        const { status } = await Notifications.requestPermissionsAsync();
+        finalStatus = status;
+      }
+      return finalStatus === 'granted';
+    } catch (error) {
+      console.warn("Notification permissions error:", error);
+      return false;
+    }
   }
 
   private static subtractMinutes(hour: number, minute: number, minutesToSubtract: number): { hour: number, minute: number } {
@@ -75,24 +94,57 @@ class ReminderService {
     return ids;
   }
 
+  static async getNotificationIds(medicationId: string): Promise<string[]> {
+    const mapping = await LocalStorageService.getItem<Record<string, string[]>>('@notification_mapping') || {};
+    return mapping[medicationId] || [];
+  }
+
+  static async saveNotificationIds(medicationId: string, ids: string[]) {
+    const mapping = await LocalStorageService.getItem<Record<string, string[]>>('@notification_mapping') || {};
+    mapping[medicationId] = ids;
+    await LocalStorageService.setItem('@notification_mapping', mapping);
+  }
+
+  static async cancelRemindersForMedication(medicationId: string) {
+    const ids = await this.getNotificationIds(medicationId);
+    for (const id of ids) {
+      try {
+        await Notifications.cancelScheduledNotificationAsync(id);
+      } catch (e) {
+        console.warn(`Failed to cancel notification ${id}`, e);
+      }
+    }
+    await this.saveNotificationIds(medicationId, []);
+  }
+
   static async scheduleMedicationReminders(medication: { id: string; name: string; times: string[] }) {
-    // Cancel existing reminders for this medication (if we were tracking them, but for now we might just rely on the user managing them or simple overwrite if we had IDs)
-    // In a real app, we'd store the notification IDs linked to the medication ID.
-    // For this implementation, we will just schedule new ones.
+    // First, cancel any existing reminders for this medication
+    await this.cancelRemindersForMedication(medication.id);
+    
+    const allIds: string[] = [];
     
     for (const time of medication.times) {
       const [hour, minute] = time.split(':').map(Number);
-      await this.scheduleReminder(
+      const ids = await this.scheduleReminder(
         'Hora do Medicamento',
         `Está na hora de tomar ${medication.name}`,
         hour,
         minute
       );
+      allIds.push(...ids);
     }
+
+    // Save the new IDs
+    await this.saveNotificationIds(medication.id, allIds);
   }
 
   static async cancelAllReminders() {
-    await Notifications.cancelAllScheduledNotificationsAsync();
+    try {
+      await Notifications.cancelAllScheduledNotificationsAsync();
+      await LocalStorageService.setItem('@notification_mapping', {});
+    } catch (error) {
+      console.warn("Error canceling reminders:", error);
+    }
   }
 }
 
