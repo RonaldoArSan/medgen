@@ -1,4 +1,4 @@
-import * as Notifications from 'expo-notifications';
+import type * as NotificationsType from 'expo-notifications';
 import LocalStorageService from './LocalStorageService';
 
 // Notifications.setNotificationHandler is moved to init() to avoid immediate crash in Expo Go if unsupported
@@ -7,9 +7,25 @@ const REMINDERS_KEY = '@reminders';
 
 class ReminderService {
   private static isInitialized = false;
+  private static Notifications: typeof NotificationsType | null = null;
 
-  static init() {
+  private static async getNotifications() {
+    if (this.Notifications) return this.Notifications;
+    try {
+      // Dynamically import expo-notifications to avoid crash on load in Expo Go
+      this.Notifications = await import('expo-notifications');
+      return this.Notifications;
+    } catch (error) {
+      console.warn("expo-notifications is not available:", error);
+      return null;
+    }
+  }
+
+  static async init() {
     if (this.isInitialized) return;
+    const Notifications = await this.getNotifications();
+    if (!Notifications) return;
+
     try {
       Notifications.setNotificationHandler({
         handleNotification: async () => ({
@@ -27,7 +43,10 @@ class ReminderService {
   }
 
   static async requestPermissions() {
-    this.init();
+    await this.init();
+    const Notifications = await this.getNotifications();
+    if (!Notifications) return false;
+
     try {
       const { status: existingStatus } = await Notifications.getPermissionsAsync();
       let finalStatus = existingStatus;
@@ -62,6 +81,9 @@ class ReminderService {
     const hasPermission = await this.requestPermissions();
     if (!hasPermission) return [];
 
+    const Notifications = await this.getNotifications();
+    if (!Notifications) return [];
+
     const notificationsToSchedule = [
       { offset: 10, sound: false, suffix: '(Em 10 min)' },
       { offset: 5, sound: false, suffix: '(Em 5 min)' },
@@ -73,22 +95,26 @@ class ReminderService {
     for (const { offset, sound, suffix } of notificationsToSchedule) {
       const time = this.subtractMinutes(hour, minute, offset);
       
-      const trigger: Notifications.NotificationTriggerInput = {
+      const trigger: NotificationsType.NotificationTriggerInput = {
         type: Notifications.SchedulableTriggerInputTypes.CALENDAR,
         hour: time.hour,
         minute: time.minute,
         repeats: true,
       };
 
-      const id = await Notifications.scheduleNotificationAsync({
-        content: {
-          title: suffix ? `${title} ${suffix}` : title,
-          body,
-          sound,
-        },
-        trigger,
-      });
-      ids.push(id);
+      try {
+        const id = await Notifications.scheduleNotificationAsync({
+          content: {
+            title: suffix ? `${title} ${suffix}` : title,
+            body,
+            sound,
+          },
+          trigger,
+        });
+        ids.push(id);
+      } catch (e) {
+        console.warn("Failed to schedule notification", e);
+      }
     }
 
     return ids;
@@ -106,6 +132,9 @@ class ReminderService {
   }
 
   static async cancelRemindersForMedication(medicationId: string) {
+    const Notifications = await this.getNotifications();
+    if (!Notifications) return;
+
     const ids = await this.getNotificationIds(medicationId);
     for (const id of ids) {
       try {
@@ -139,6 +168,9 @@ class ReminderService {
   }
 
   static async cancelAllReminders() {
+    const Notifications = await this.getNotifications();
+    if (!Notifications) return;
+
     try {
       await Notifications.cancelAllScheduledNotificationsAsync();
       await LocalStorageService.setItem('@notification_mapping', {});

@@ -59,6 +59,15 @@ export default function RootLayout() {
               name="address/add"
               options={{ title: "Novo Endereço" }}
             />
+            <Stack.Screen
+              name="settings"
+              options={{ title: "Configurações" }}
+            />
+            <Stack.Screen
+              name="notifications"
+              options={{ title: "Notificações" }}
+            />
+            <Stack.Screen name="help" options={{ title: "Ajuda e Suporte" }} />
           </Stack>
         </CartProvider>
       </AuthProvider>

@@ -24,6 +24,7 @@ export interface Medication {
   endDate?: string;
   active: boolean;
   takenHistory?: { date: string; time: string }[];
+  imageUri?: string;
 }
 
 export interface Reminder {

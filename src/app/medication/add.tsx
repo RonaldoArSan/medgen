@@ -1,9 +1,11 @@
 import { MaterialIcons } from "@expo/vector-icons";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Image,
   Platform,
   ScrollView,
   StyleSheet,
@@ -32,6 +34,8 @@ export default function AddMedicationScreen() {
   const [startDate, setStartDate] = useState(new Date().toISOString());
   const [showDatePicker, setShowDatePicker] = useState(false);
 
+  const [imageUri, setImageUri] = useState<string | null>(null);
+
   useEffect(() => {
     if (initialData && typeof initialData === "string") {
       try {
@@ -44,11 +48,46 @@ export default function AddMedicationScreen() {
         if (data.frequency) setFrequency(data.frequency);
         if (data.times && Array.isArray(data.times)) setTimes(data.times);
         if (data.startDate) setStartDate(data.startDate);
+        if (data.imageUri) setImageUri(data.imageUri);
       } catch (e) {
         console.error("Failed to parse initial data", e);
       }
     }
   }, [initialData]);
+
+  const pickImage = async () => {
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ImagePicker.MediaTypeOptions.Images,
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
+
+  const takePhoto = async () => {
+    const { status } = await ImagePicker.requestCameraPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert(
+        "Permissão necessária",
+        "Precisamos de permissão para acessar a câmera."
+      );
+      return;
+    }
+
+    const result = await ImagePicker.launchCameraAsync({
+      allowsEditing: true,
+      aspect: [4, 3],
+      quality: 1,
+    });
+
+    if (!result.canceled) {
+      setImageUri(result.assets[0].uri);
+    }
+  };
 
   const addTime = () => {
     const newTimes = [...times, "08:00"];
@@ -113,6 +152,7 @@ export default function AddMedicationScreen() {
         lowStockThreshold: 5,
         startDate: new Date().toISOString(),
         active: true,
+        imageUri: imageUri || undefined,
       };
 
       if (id) {
@@ -131,6 +171,40 @@ export default function AddMedicationScreen() {
 
   return (
     <ScrollView style={styles.container}>
+      <View style={styles.imageContainer}>
+        {imageUri ? (
+          <View>
+            <Image source={{ uri: imageUri }} style={styles.previewImage} />
+            <TouchableOpacity
+              style={styles.removeImageButton}
+              onPress={() => setImageUri(null)}
+            >
+              <MaterialIcons name="close" size={20} color={Colors.white} />
+            </TouchableOpacity>
+          </View>
+        ) : (
+          <View style={styles.imagePlaceholder}>
+            <MaterialIcons name="image" size={40} color={Colors.textLight} />
+            <Text style={styles.imagePlaceholderText}>Adicionar Foto</Text>
+          </View>
+        )}
+
+        <View style={styles.imageActions}>
+          <TouchableOpacity style={styles.actionButton} onPress={takePhoto}>
+            <MaterialIcons name="camera-alt" size={24} color={Colors.primary} />
+            <Text style={styles.actionButtonText}>Câmera</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.actionButton} onPress={pickImage}>
+            <MaterialIcons
+              name="photo-library"
+              size={24}
+              color={Colors.primary}
+            />
+            <Text style={styles.actionButtonText}>Galeria</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+
       <TouchableOpacity
         style={styles.scanButton}
         onPress={() => router.push("/scanner" as any)}
@@ -407,5 +481,62 @@ const styles = StyleSheet.create({
   addTimeText: {
     color: Colors.primary,
     fontWeight: Typography.weights.medium,
+  },
+  imageContainer: {
+    marginBottom: Spacing.l,
+    alignItems: "center",
+  },
+  previewImage: {
+    width: 150,
+    height: 150,
+    borderRadius: BorderRadius.m,
+    marginBottom: Spacing.m,
+  },
+  imagePlaceholder: {
+    width: 150,
+    height: 150,
+    borderRadius: BorderRadius.m,
+    backgroundColor: Colors.surface,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    borderStyle: "dashed",
+    justifyContent: "center",
+    alignItems: "center",
+    marginBottom: Spacing.m,
+  },
+  imagePlaceholderText: {
+    color: Colors.textSecondary,
+    marginTop: Spacing.s,
+    fontSize: Typography.sizes.s,
+  },
+  imageActions: {
+    flexDirection: "row",
+    gap: Spacing.m,
+  },
+  actionButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: Colors.surface,
+    padding: Spacing.s,
+    paddingHorizontal: Spacing.m,
+    borderRadius: BorderRadius.m,
+    borderWidth: 1,
+    borderColor: Colors.border,
+    gap: Spacing.s,
+  },
+  actionButtonText: {
+    color: Colors.textPrimary,
+    fontWeight: Typography.weights.medium,
+  },
+  removeImageButton: {
+    position: "absolute",
+    top: -10,
+    right: -10,
+    backgroundColor: Colors.danger,
+    borderRadius: 15,
+    width: 30,
+    height: 30,
+    justifyContent: "center",
+    alignItems: "center",
   },
 });

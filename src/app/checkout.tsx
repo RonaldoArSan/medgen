@@ -27,7 +27,7 @@ export default function CheckoutScreen() {
 
   const loadUserAddress = async () => {
     const user = await UserService.getUser();
-    if (user.address) {
+    if (user && user.address) {
       setAddress(user.address);
     }
   };

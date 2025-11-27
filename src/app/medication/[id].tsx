@@ -3,6 +3,7 @@ import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useState } from "react";
 import {
   Alert,
+  Image,
   ScrollView,
   StyleSheet,
   Text,
@@ -112,7 +113,14 @@ export default function MedicationDetailScreen() {
     <ScrollView style={styles.container}>
       <View style={styles.headerCard}>
         <View style={styles.iconContainer}>
-          <Ionicons name="medkit" size={48} color={Colors.primary} />
+          {medication.imageUri ? (
+            <Image
+              source={{ uri: medication.imageUri }}
+              style={styles.medicationImage}
+            />
+          ) : (
+            <Ionicons name="medkit" size={48} color={Colors.primary} />
+          )}
         </View>
         <Text style={styles.name}>{medication.name}</Text>
         <Text style={styles.dosage}>
@@ -371,5 +379,10 @@ const styles = StyleSheet.create({
     fontWeight: Typography.weights.bold,
     marginLeft: Spacing.s,
     fontSize: Typography.sizes.m,
+  },
+  medicationImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: 40,
   },
 });

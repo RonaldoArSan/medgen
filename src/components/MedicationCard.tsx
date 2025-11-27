@@ -1,6 +1,6 @@
 import { Ionicons } from "@expo/vector-icons";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { Image, StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import { BorderRadius, Colors, Shadows, Spacing, Typography } from "../theme";
 import { Medication } from "../types";
 
@@ -19,7 +19,14 @@ export const MedicationCard: React.FC<MedicationCardProps> = ({
     <TouchableOpacity style={styles.card} onPress={onPress} activeOpacity={0.7}>
       <View style={styles.header}>
         <View style={styles.iconContainer}>
-          <Ionicons name="medkit" size={24} color={Colors.primary} />
+          {medication.imageUri ? (
+            <Image
+              source={{ uri: medication.imageUri }}
+              style={styles.medicationImage}
+            />
+          ) : (
+            <Ionicons name="medkit" size={24} color={Colors.primary} />
+          )}
         </View>
         <View style={styles.info}>
           <Text style={styles.name}>{medication.name}</Text>
@@ -141,5 +148,10 @@ const styles = StyleSheet.create({
   },
   cartIcon: {
     marginLeft: Spacing.xs,
+  },
+  medicationImage: {
+    width: "100%",
+    height: "100%",
+    borderRadius: BorderRadius.round,
   },
 });
