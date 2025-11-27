@@ -8,12 +8,17 @@ import {
   TouchableOpacity,
   View,
 } from "react-native";
-import { MOCK_USER } from "../../services/mockData";
+import { useAuth } from "../../context/AuthContext";
 import { BorderRadius, Colors, Spacing, Typography } from "../../theme";
 
 export default function ProfileScreen() {
   const router = useRouter();
-  const user = MOCK_USER;
+  const { user, signOut } = useAuth();
+
+  const handleLogout = async () => {
+    await signOut();
+    // Navigation is handled by AuthContext
+  };
 
   const menuItems = [
     { icon: "history", label: "Histórico de Pedidos", route: "/orders" },
@@ -24,8 +29,15 @@ export default function ProfileScreen() {
     },
     { icon: "settings", label: "Configurações", route: "/settings" },
     { icon: "help", label: "Ajuda e Suporte", route: "/help" },
-    { icon: "logout", label: "Sair", route: "/logout", color: Colors.danger },
+    {
+      icon: "logout",
+      label: "Sair",
+      action: handleLogout,
+      color: Colors.danger,
+    },
   ];
+
+  if (!user) return null;
 
   return (
     <ScrollView style={styles.container}>
@@ -44,7 +56,7 @@ export default function ProfileScreen() {
             key={index}
             style={styles.menuItem}
             onPress={() =>
-              item.route !== "/logout" && router.push(item.route as any)
+              item.action ? item.action() : router.push(item.route as any)
             }
           >
             <View
